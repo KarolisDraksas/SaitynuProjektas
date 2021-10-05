@@ -8,7 +8,11 @@ const Product = require('../Models/Product');
 router.get('/', async (req, res) => {
     try{
         const products = await Product.find();
+        if (products !== null){
         res.status(200).json(products);
+        } else{
+            res.status(404).json({message: "No products found!"});
+        }
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -35,7 +39,12 @@ router.post('/', async (req, res)=>{
 router.get('/:productId', async (req, res)=>{
     try{
     const product = await Product.findById(req.params.productId);
-    res.status(200).json(product);
+    if (product !== null){
+        res.status(200).json(product);
+    } else{
+        res.status(404).json({message: "No product with this ID found!"});
+    }
+
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -45,7 +54,7 @@ router.get('/:productId', async (req, res)=>{
 // delete specific post
 router.delete('/:productId', async (req, res) =>{
     try{
-     const removedProduct = await Product.remove({_id: req.params.productId });
+     const removedProduct = await Product.deleteOne({_id: req.params.productId });
      res.status(204).json(removedProduct);
     }catch(err){
         res.status(404).json({message: err});

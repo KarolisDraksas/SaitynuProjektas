@@ -12,7 +12,11 @@ const SALT_WORK_FACTOR = 10;
 router.get('/', async (req, res) => {
     try{
         const users = await User.find();
+        if (users !== null){
         res.status(200).json(users);
+        } else{
+            res.status(404).json({message: "No users found!"});
+        }
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -42,7 +46,11 @@ router.post('/', async (req, res)=>{
 router.get('/:userId', async (req, res)=>{
     try{
     const user = await User.findById(req.params.userId);
+    if (user !== null){
     res.status(200).json(user);
+    } else{
+        res.status(404).json({message: "No user with this ID found!"});
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -74,7 +82,11 @@ router.patch('/:userId', async (req, res)=>{
 router.get('/:userId/orders', async (req, res) => {
     try{
         const orders = await Order.find({ buyersID: req.params.userId});
+        if (orders !== null){
         res.status(200).json(orders);
+        } else{
+            res.status(404).json({message: "No orders of this user found!"});
+        }
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -108,8 +120,11 @@ router.get('/:userId/orders/:orderId', async (req, res)=>{
     try{
     //const user = await User.findById(req.params.userId);
     const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
-
+    if (orders !== null){
     res.status(200).json(orders);
+    } else{
+        res.status(404).json({message: "No orders with this ID found!"});
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
