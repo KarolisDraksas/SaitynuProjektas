@@ -82,7 +82,7 @@ router.patch('/:userId', async (req, res)=>{
 router.get('/:userId/orders', async (req, res) => {
     try{
         const orders = await Order.find({ buyersID: req.params.userId});
-        if (orders !== null){
+        if (orders !== null && orders !== [] && orders.length > 0){
         res.status(200).json(orders);
         } else{
             res.status(404).json({message: "No orders of this user found!"});
@@ -120,8 +120,8 @@ router.get('/:userId/orders/:orderId', async (req, res)=>{
     try{
     //const user = await User.findById(req.params.userId);
     const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
-    if (orders !== null){
-    res.status(200).json(orders);
+    if (orders !== null && orders !== [] && orders.length > 0){
+        res.status(200).json(orders);
     } else{
         res.status(404).json({message: "No orders with this ID found!"});
     }
