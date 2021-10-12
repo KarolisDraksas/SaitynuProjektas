@@ -10,13 +10,13 @@ const SALT_WORK_FACTOR = 10;
 
 //get all posts
 router.get('/', async (req, res) => {
-    try{
+    label: try{
         const users = await User.find();
-        if (users !== null){
-        res.status(200).json(users);
-        } else{
+        if (users === null){
             res.status(404).json({message: "No users found!"});
+            break label;
         }
+        res.status(200).json(users);
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -44,13 +44,13 @@ router.post('/', async (req, res)=>{
 });
 
 router.get('/:userId', async (req, res)=>{
-    try{
+    label: try{
     const user = await User.findById(req.params.userId);
-    if (user !== null){
-    res.status(200).json(user);
-    } else{
+    if (user === null){   
         res.status(404).json({message: "No user with this ID found!"});
+        break label;
     }
+    res.status(200).json(user);
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -58,9 +58,14 @@ router.get('/:userId', async (req, res)=>{
 
 
 // delete specific post
-router.delete('/:usertId', async (req, res) =>{
-    try{
-     const removedUser = await User.deleteOne({_id: req.params.usertId });
+router.delete('/:userId', async (req, res) =>{
+    label: try{
+     const user = await User.findById(req.params.userId);
+     if (user === null){
+        res.status(404).json({message: "No user with this ID"});
+        break label;
+     }
+     const removedUser = await User.deleteOne({_id: req.params.userId });
      res.status(204).json(removedUser);
     }catch(err){
         res.status(404).json({message: err});
@@ -68,8 +73,13 @@ router.delete('/:usertId', async (req, res) =>{
 });
 
 //update post
-router.patch('/:userId', async (req, res)=>{
-    try{
+router.put('/:userId', async (req, res)=>{
+    label: try{
+        const user = await User.findById(req.params.userId);
+        if (user === null){
+        res.status(404).json({message: "No user with this ID"});
+        break label;
+        }
     const updatedUser = await User.updateOne({ _id:req.params.userId}, {$set: {firstName: req.body.firstName}});
     res.status(200).json(updatedUser);
     }catch(err){
@@ -80,13 +90,18 @@ router.patch('/:userId', async (req, res)=>{
 
 //get all users orders
 router.get('/:userId/orders', async (req, res) => {
-    try{
-        const orders = await Order.find({ buyersID: req.params.userId});
-        if (orders !== null && orders !== [] && orders.length > 0){
-        res.status(200).json(orders);
-        } else{
-            res.status(404).json({message: "No orders of this user found!"});
+    label: try{
+        const user = await User.findById(req.params.userId);
+        if (user === null){
+            res.status(404).json({message: "No user with this ID"});
+            break label;
         }
+        const orders = await Order.find({ buyersID: req.params.userId});
+        if (orders === null || orders === [] || orders.length === 0){
+            res.status(404).json({message: "No orders of this user exists"});
+            break label;
+        }
+        res.status(200).json(orders);
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -117,22 +132,40 @@ router.post('/:userId/orders', async (req, res) => {
 });
 
 router.get('/:userId/orders/:orderId', async (req, res)=>{
-    try{
-    //const user = await User.findById(req.params.userId);
+    label: try{
+    const user = await User.findById(req.params.userId);
     const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
-    if (orders !== null && orders !== [] && orders.length > 0){
-        res.status(200).json(orders);
-    } else{
-        res.status(404).json({message: "No orders with this ID found!"});
+
+    if (user === null || user === [] || user.length === 0){
+        res.status(404).json({message: "There is no user with this ID"});
+        break label;
+    }        
+
+    if (orders === null || orders === [] || orders.length === 0){
+        res.status(404).json({message: "There is no order with this ID"});
+        break label;
     }
+    res.status(200).json(orders);
     }catch(err){
         res.status(404).json({message: err});
     }
 })
 
-router.delete('/:usertId/orders/:orderId', async (req, res) =>{
-    try{
-     const removedOrder = await Order.deleteOne({_id: req.params.orderId, buyersID: req.params.usertId });
+router.delete('/:userId/orders/:orderId', async (req, res) =>{
+    label: try{
+        const user = await User.findById(req.params.userId);
+        const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
+    
+        if (user === null || user === [] || user.length === 0){
+            res.status(404).json({message: "There is no user with this ID"});
+            break label;
+        }        
+    
+        if (orders === null || orders === [] || orders.length === 0){
+            res.status(404).json({message: "There is no order with this ID"});
+            break label;
+        }
+     const removedOrder = await Order.deleteOne({_id: req.params.orderId, buyersID: req.params.userId });
      res.status(204).json(removedOrder);
     }catch(err){
         res.status(404).json({message: err});
@@ -140,8 +173,20 @@ router.delete('/:usertId/orders/:orderId', async (req, res) =>{
 });
 
 
-router.patch('/:userId/orders/:orderId', async (req, res)=>{
-    try{
+router.put('/:userId/orders/:orderId', async (req, res)=>{
+   label: try{
+        const user = await User.findById(req.params.userId);
+        const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
+    
+        if (user === null || user === [] || user.length === 0){
+            res.status(404).json({message: "There is no user with this ID"});
+            break label;
+        }        
+    
+        if (orders === null || orders === [] || orders.length === 0){
+            res.status(404).json({message: "There is no order with this ID"});
+            break label;
+        }
     const updatedOrder = await Order.updateOne({ _id:req.params.orderId, buyersID:req.params.userId}, {$set: {buyersFirstName: req.body.buyersFirstName}});
     res.status(200).json(updatedOrder);
     }catch(err){

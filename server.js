@@ -14,7 +14,7 @@ const productsRoute = require('./Routes/Products');
 const usersRoute = require('./Routes/Users');
 //const ordersRoute = require('./Routes/Orders');
 
-app.use('/api/v1/products', productsRoute);
+app.use('/api/v1/categories', productsRoute);
 app.use('/api/v1/users', usersRoute);
 //app.use('/users/:userId/orders', ordersRoute);
 
