@@ -6,7 +6,7 @@ const Product = require('../Models/Product');
 const Categorie = require('../Models/Categorie');
 
 
-//get all posts
+//get all posts 
 router.get('/', async (req, res) => {
     label: try{
         const categories = await Categorie.find();
