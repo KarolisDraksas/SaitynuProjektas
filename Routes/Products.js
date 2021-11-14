@@ -6,15 +6,19 @@ const Product = require('../Models/Product');
 const Categorie = require('../Models/Categorie');
 
 
+const auth = require("../Middleware/auth");
+const User = require('../Models/User');
 //get all posts 
 router.get('/', async (req, res) => {
     label: try{
+       // console.log(req.user)
+        if (true){
         const categories = await Categorie.find();
         if (categories === null || categories === [] || categories.length === 0){
             res.status(404).json({message: "No categories found!"});
             break label;
         }
-        res.status(200).json(categories);
+        res.status(200).json(categories);}
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -22,13 +26,18 @@ router.get('/', async (req, res) => {
 
 
 //add post
-router.post('/', async (req, res)=>{
+router.post('/', auth, async (req, res)=>{
     try{
+
+    if (req.user.role ==='admin'){
     const categorie = new Categorie({
         name: req.body.name
     });
     const savedcategorie = await categorie.save();  
-    res.status(201).json(savedcategorie)  
+    res.status(201).json(savedcategorie)} 
+    else{
+        res.status(404).json({message: "You need to be admin to add categories"})
+    }
     } catch(err){
         res.status(404).json({ message: err });
     }
@@ -48,7 +57,6 @@ router.get('/:categoryId', async (req, res)=>{
         res.status(404).json({message: err});
     }
 })
-
 
 // delete specific post
 router.delete('/:categoryId', async (req, res) =>{

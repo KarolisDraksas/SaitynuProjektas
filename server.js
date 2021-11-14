@@ -4,40 +4,41 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 require('dotenv/config')
 
+
 const port = process.env.PORT || 3000;
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
+const passport = require('passport');
+const session = require("express-session");
+
+//const session = require('session');
+app.use(session({ secret: 'anything' }));
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use(cors());
 app.use(express.json());
 
 const User = require("./Models/User");
 
-// Register
 app.post("/register", async (req, res) => {
 
-   // Our register logic starts here
    try {
-     // Get user input
      const { first_name, last_name, email, password } = req.body;
  
-     // Validate user input
      if (!(email && password && first_name && last_name)) {
        res.status(400).send("All input is required");
      }
  
-     // check if user already exist
-     // Validate if user exist in our database
+   
      const oldUser = await User.findOne({ email });
  
      if (oldUser) {
        return res.status(409).send("User Already Exist. Please Login");
      }
  
-     //Encrypt user password
      encryptedPassword = await bcrypt.hash(password, 10);
  
-     // Create user in our database
      const user = await User.create({
        first_name,
        last_name,
@@ -45,7 +46,6 @@ app.post("/register", async (req, res) => {
        password: encryptedPassword,
      });
  
-     // Create token
      const token = jwt.sign(
        { user_id: user._id, email },
        process.env.TOKEN_KEY,
@@ -53,62 +53,52 @@ app.post("/register", async (req, res) => {
          expiresIn: "2h",
        }
      );
-     // save user token
      user.token = token;
  
-     // return new user
      res.status(201).json(user);
    } catch (err) {
      console.log(err);
    }
-   // Our register logic ends here
  });
  
- // ...
+
  
  app.post("/login", async (req, res) => {
 
-   // Our login logic starts here
    try {
-     // Get user input
      const { email, password } = req.body;
  
-     // Validate user input
      if (!(email && password)) {
        res.status(400).send("All input is required");
      }
-     // Validate if user exist in our database
-     const user = await User.findOne({ email: email });
-     //console.log(password);
-     //console.log(user);
+     const sessionUser = await User.findOne({ email: email });
+
  
-     if (user && (await bcrypt.compare(password, user.password))) {
-       // Create token
+     if (sessionUser && (await bcrypt.compare(password, sessionUser.password))) {
        const token = jwt.sign(
-         { user_id: user._id, email },
+         { user_id: sessionUser._id, email, role: sessionUser.role },
          process.env.TOKEN_KEY,
          {
            expiresIn: "2h",
+           algorithm: 'HS256'
          }
        );
  
-       // save user token
-       user.token = token;
- 
-       // user
-       res.status(200).json(user);
-     }
-     res.status(400).send("Invalid Credentials");
+       sessionUser.token = token 
+       
+       res.status(200).json(sessionUser);
+     } else{
+     res.status(400).send("Invalid Credentials");}
    } catch (err) {
      console.log(err);
    }
-   // Our register logic ends here
  });
 
  const auth = require("./Middleware/auth");
 
  app.get("/welcome", auth, (req, res) => {
-   res.status(200).send("Welcome 🙌 ");
+
+   res.status(200).send(req.user);
  });
 
 
@@ -119,8 +109,9 @@ const usersRoute = require('./Routes/Users');
 app.use('/api/v1/categories', productsRoute);
 app.use('/api/v1/users', usersRoute);
 //app.use('/users/:userId/orders', ordersRoute);
-
+ 
 app.get('/', (req, res)=>{
+   //console.log(req.user);
    res.send('We are on home'); 
 });
 
@@ -128,4 +119,5 @@ mongoose.connect( process.env.DB_CONNECTION , { useNewUrlParser: true} ,
 () => console.log("Connected to DB")
 );
 
-app.listen(port);
+//app.listen(port); 
+module.exports = app;

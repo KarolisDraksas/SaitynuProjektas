@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "devStart": "nodemon server.js"
+    "devStart": "nodemon server.js",
+    "Server": "nodemon ss.js"
   },
   "keywords": [],
   "author": "",
@@ -15,8 +16,11 @@
     "cors": "^2.8.5",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
+    "express-session": "^1.17.2",
     "jsonwebtoken": "^8.5.1",
-    "mongoose": "^6.0.8"
+    "mongoose": "^6.0.8",
+    "passport": "^0.5.0",
+    "session": "^0.1.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.13"
