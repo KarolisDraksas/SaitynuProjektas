@@ -11,7 +11,6 @@ const jwt = require('jsonwebtoken')
 const passport = require('passport');
 const session = require("express-session");
 
-//const session = require('session');
 app.use(session({ secret: 'anything' }));
 app.use(passport.initialize());
 app.use(passport.session());
@@ -47,7 +46,7 @@ app.post("/register", async (req, res) => {
      });
  
      const token = jwt.sign(
-       { user_id: user._id, email },
+       { user_id: user._id, email, role: user.role },
        process.env.TOKEN_KEY,
        {
          expiresIn: "2h",
@@ -102,6 +101,50 @@ app.post("/register", async (req, res) => {
  });
 
 
+ app.post("/registeradmin", auth, async (req, res) => {
+
+  try {
+    const { first_name, last_name, email, password } = req.body;
+
+    if (!(email && password && first_name && last_name)) {
+      res.status(400).send("All input is required");
+    }
+
+  
+    const oldUser = await User.findOne({ email });
+
+    if (oldUser) {
+      return res.status(409).send("User Already Exist. Please Login");
+    }
+
+    encryptedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
+      first_name,
+      last_name,
+      email: email.toLowerCase(), // sanitize: convert email to lowercase
+      password: encryptedPassword,
+      role:'admin'
+    });
+
+    const token = jwt.sign(
+      { user_id: user._id, email },
+      process.env.TOKEN_KEY,
+      {
+        expiresIn: "2h",
+      }
+    );
+    user.token = token;
+
+    res.status(201).json(user);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+
+
+
 const productsRoute = require('./Routes/Products');
 const usersRoute = require('./Routes/Users');
 //const ordersRoute = require('./Routes/Orders');
@@ -114,7 +157,30 @@ app.get('/', (req, res)=>{
    //console.log(req.user);
    res.send('We are on home'); 
 });
+/*
+app.use(function(req, res, next){
+  res.status(404);
 
+  // respond with html page
+  if (req.accepts('html')) {
+    res.render('404', { url: req.url });
+    return;
+  }
+
+  // respond with json
+  if (req.accepts('json')) {
+    res.send({ error: 'Not found' });
+    return;
+  }
+
+  // default to plain-text. send()
+  res.type('txt').send('Not found');
+});*/
+
+app.get('*', (req, res) =>{
+ // res.sendFile(__dirname+'/public/error.html');
+  res.sendStatus(404);
+})
 mongoose.connect( process.env.DB_CONNECTION , { useNewUrlParser: true} ,
 () => console.log("Connected to DB")
 );

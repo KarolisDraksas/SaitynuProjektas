@@ -14,6 +14,10 @@ const ProductSchema = mongoose.Schema({
         type: Number,
         required: true
     },
+    ownerID: {
+        type: String,
+        required: true
+    },
     date: {
         type: Date,
         default: Date.now

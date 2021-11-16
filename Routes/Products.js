@@ -59,8 +59,9 @@ router.get('/:categoryId', async (req, res)=>{
 })
 
 // delete specific post
-router.delete('/:categoryId', async (req, res) =>{
+router.delete('/:categoryId', auth, async (req, res) =>{
     label :try{
+        if (req.user.role ==='admin'){
         const categorie = await Categorie.findById(req.params.categoryId);
         if (categorie === null){
             res.status(404).json({message: "No category with this ID exists!"});
@@ -68,16 +69,23 @@ router.delete('/:categoryId', async (req, res) =>{
         }
      const removedCategory = await Categorie.deleteOne({_id: req.params.categoryId });
      res.status(204).json({message: "Category deleted"});
+    } else{
+        res.status(404).json({message: "You need to be admin to delete categories"})
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
 });
 
 //update post
-router.put('/:categoryId', async (req, res)=>{
+router.put('/:categoryId', auth, async (req, res)=>{
     try{
+        if (req.user.role ==='admin'){
     const updatedCategory = await Categorie.updateOne({ _id: req.params.categoryId}, {$set: {name: req.body.name}});
-    res.status(200).json(updatedCategory);
+    res.status(200).json({message: "Category updated"});
+        } else{
+            res.status(404).json({message: "You need to be admin to update categories"})
+        }
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -89,7 +97,7 @@ router.put('/:categoryId', async (req, res)=>{
 
 //------------------------------------------------------------------------------
 //get all posts
-router.get('/:categoryId/products', async (req, res) => {          /// irgi reikia dvieju tikrinimu, cj reikia parasyti kad jei nera tokio id tai kad no category with this id o jei id yra tai tzada kad nera products
+router.get('/:categoryId/products', async (req, res) => {          
     label: try{
         const products = await Product.find({categoryId: req.params.categoryId});
         const category = await Categorie.findById(req.params.categoryId);
@@ -107,15 +115,21 @@ router.get('/:categoryId/products', async (req, res) => {          /// irgi reik
     }
 });
 
-
+//-------------owner id to add
 //add post
-router.post('/:categoryId/products', async (req, res)=>{
-    try{
+router.post('/:categoryId/products', auth, async (req, res)=>{
+    label: try{
+        const category = await Categorie.findById(req.params.categoryId);
+        if (category === null || category === [] || category.length === 0){
+                res.status(404).json({message: "No category exists with this ID"});
+                break label;
+            }
     const product = new Product({
         title: req.body.title,
         description: req.body.description,
         price: req.body.price,
-        categoryId: req.params.categoryId
+        categoryId: req.params.categoryId,
+        ownerID: req.user.user_id
     });
     const savedProduct = await product.save();  
     res.status(201).json(savedProduct)  
@@ -145,7 +159,7 @@ router.get('/:categoryId/products/:productId', async (req, res)=>{
 
 
 // delete specific post
-router.delete('/:categoryId/products/:productId', async (req, res) =>{
+router.delete('/:categoryId/products/:productId', auth, async (req, res) =>{
     label: try{
         const category = await Categorie.findById(req.params.categoryId);
         if (category === null || category === [] || category.length === 0){
@@ -157,15 +171,19 @@ router.delete('/:categoryId/products/:productId', async (req, res) =>{
             res.status(404).json({message: "No product exists with this ID"});
             break label;
         }
+        if (product.ownerID === req.user.user_id || req.user.role === 'admin'){
      const removedProduct = await Product.deleteOne({_id: req.params.productId });
      res.status(204).json(removedProduct);
+        } else{
+            res.status(404).json({message: "Only product owner can delete his products"});
+        }
     }catch(err){
         res.status(404).json({message: err});
     }
 });
 
 //update post
-router.put('/:categoryId/products/:productId', async (req, res)=>{
+router.put('/:categoryId/products/:productId', auth, async (req, res)=>{
     label :try{
         const category = await Categorie.findById(req.params.categoryId);
         if (category === null || category === [] || category.length === 0){
@@ -177,8 +195,14 @@ router.put('/:categoryId/products/:productId', async (req, res)=>{
             res.status(404).json({message: "No product exists with this ID"});
             break label;
         }
-    const updatedProduct = await Product.updateOne({ _id: req.params.productId}, {$set: {title: req.body.title}});
-    res.status(200).json(updatedProduct);
+        if (product.ownerID === req.user.user_id || req.user.role === 'admin'){
+
+    const updatedProduct = await Product.updateOne({ _id: req.params.productId}, {$set: {title: req.body.title, description: req.body.description,
+        price: req.body.price}});
+        res.status(200).json({Message: "Product updated"});
+        } else{
+            res.status(404).json({message: "Only product owner can update his products"});
+        }
     }catch(err){
         res.status(404).json({message: err});
     }

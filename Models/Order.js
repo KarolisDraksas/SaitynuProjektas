@@ -18,29 +18,16 @@ const OrderSchema = mongoose.Schema({
         type: String,
         required: true
     },
-    sellersFirstName: {
-        type: String,
-        required: true
-    },
-    sellersLastName: {
-        type: String,
-        required: true
-    },
-    sellersEmail: {
-        type: String,
-        required: true
-    },
     deliveryAddress: {
         type: String,
         required: true
     },
-    description: {
+    productID:{
         type: String,
         required: true
     },
     price: {
         type: Number,
-        required: true
     },
     date: {
         type: Date,

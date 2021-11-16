@@ -6,7 +6,9 @@ const router = express.Router();
 const User = require('../Models/User');
 const Order = require('../Models/Order');
 const SALT_WORK_FACTOR = 10;
+const Product = require('../Models/Product');
 
+const auth = require('../Middleware/auth')
 
 //get all posts
 router.get('/', async (req, res) => {
@@ -24,6 +26,7 @@ router.get('/', async (req, res) => {
 
 
 //add post
+// sito nereikia jauciu nes same kas register
 router.post('/', async (req, res)=>{
     try{
     const salt = await bcrypt.genSalt(SALT_WORK_FACTOR);
@@ -58,30 +61,46 @@ router.get('/:userId', async (req, res)=>{
 
 
 // delete specific post
-router.delete('/:userId', async (req, res) =>{
+router.delete('/:userId', auth, async (req, res) =>{
     label: try{
+        if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
      const user = await User.findById(req.params.userId);
      if (user === null){
         res.status(404).json({message: "No user with this ID"});
         break label;
      }
      const removedUser = await User.deleteOne({_id: req.params.userId });
-     res.status(204).json(removedUser);
+     res.status(204).json({message: "User deleted"});
+    } else {
+        res.status(404).json({message: "This user can't delete other users"});
+        break label;
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
 });
 
 //update post
-router.put('/:userId', async (req, res)=>{
+router.put('/:userId', auth, async (req, res)=>{
     label: try{
+     if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
+        if (!(req.body.last_name && req.body.first_name && req.body.email && req.body.password)){
+            res.status(404).json({message: "All user fields are required"})
+            break label;
+        }
         const user = await User.findById(req.params.userId);
         if (user === null){
         res.status(404).json({message: "No user with this ID"});
         break label;
         }
-    const updatedUser = await User.updateOne({ _id:req.params.userId}, {$set: {firstName: req.body.firstName}});
-    res.status(200).json(updatedUser);
+        const pass = await bcrypt.hash(req.body.password, 10);
+        const updatedUser = await User.updateOne({ _id:req.params.userId}, {$set: {first_name: req.body.first_name, 
+        last_name: req.body.last_name, email: req.body.email,password: pass}});
+        res.status(200).json({message: "User updated"});
+    } else{
+        res.status(404).json({message: "This user cannot update"});
+        break label;
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
@@ -89,8 +108,9 @@ router.put('/:userId', async (req, res)=>{
 
 
 //get all users orders
-router.get('/:userId/orders', async (req, res) => {
+router.get('/:userId/orders', auth, async (req, res) => {
     label: try{
+        if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
         const user = await User.findById(req.params.userId);
         if (user === null){
             res.status(404).json({message: "No user with this ID"});
@@ -102,37 +122,54 @@ router.get('/:userId/orders', async (req, res) => {
             break label;
         }
         res.status(200).json(orders);
+    } else{
+        res.status(404).json({message: "User can only access his own orders"});
+        break label;
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
 });
 
 
-//add order ---------------------- needs changing in new order creation cause all req.body is from post schema
-router.post('/:userId/orders', async (req, res) => {
-    try{
+//add order ---------------------- 
+router.post('/:userId/orders', auth, async (req, res) => {
+    label: try{
+        if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
+    //const product = await Product.findById({_id: req.body.productID});
+    //console.log(product)
+       // if (product._id === req.body.productID){
+        if (req.body.buyersID === req.params.userId){
     const order = new Order({
-        buyersID: "61576e7557db2483b263c144",
+        buyersID: req.body.buyersID,
         buyersFirstName: req.body.buyersFirstName,
         buyersLastName: req.body.buyersFirstName,
         buyersEmail: req.body.buyersFirstName,
-        sellersFirstName: req.body.buyersFirstName,
-        sellersLastName: req.body.buyersFirstName,
-        sellersEmail: req.body.buyersFirstName,
         deliveryAddress: req.body.deliveryAddress,
-        description: req.body.description,
-        price: req.body.price
+        productID: req.body.productID
     });
     const savedOrders = await order.save();  
-    res.status(201).json(savedOrders)  
+    res.status(201).json(savedOrders)  } else{
+        res.status(404).json({message: "User ID don't match"})
+        break label;
+    }
+    } /*else{
+        res.status(404).json({message: "No product with this ID"})
+        break label;
+    }*/
+     else{
+        res.status(404).json({message: "Only user himself can order products"});
+        break label;
+    }
     } catch(err){
         res.status(404).json({ message: err });
     }
     
 });
 
-router.get('/:userId/orders/:orderId', async (req, res)=>{
+router.get('/:userId/orders/:orderId', auth, async (req, res)=>{
     label: try{
+        //if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
     const user = await User.findById(req.params.userId);
     const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
 
@@ -140,19 +177,24 @@ router.get('/:userId/orders/:orderId', async (req, res)=>{
         res.status(404).json({message: "There is no user with this ID"});
         break label;
     }        
-
+    if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
     if (orders === null || orders === [] || orders.length === 0){
         res.status(404).json({message: "There is no order with this ID"});
         break label;
     }
     res.status(200).json(orders);
+    } else{
+        res.status(404).json({message: "User can only get his own order"});
+        break label;
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
 })
 
-router.delete('/:userId/orders/:orderId', async (req, res) =>{
+router.delete('/:userId/orders/:orderId', auth, async (req, res) =>{
     label: try{
+       // if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
         const user = await User.findById(req.params.userId);
         const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
     
@@ -160,20 +202,24 @@ router.delete('/:userId/orders/:orderId', async (req, res) =>{
             res.status(404).json({message: "There is no user with this ID"});
             break label;
         }        
-    
+        if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
         if (orders === null || orders === [] || orders.length === 0){
             res.status(404).json({message: "There is no order with this ID"});
             break label;
         }
      const removedOrder = await Order.deleteOne({_id: req.params.orderId, buyersID: req.params.userId });
      res.status(204).json(removedOrder);
+    } else{
+        res.status(404).json({message: "User can only delete his own order"});
+        break label;
+    }
     }catch(err){
         res.status(404).json({message: err});
     }
 });
 
 
-router.put('/:userId/orders/:orderId', async (req, res)=>{
+router.put('/:userId/orders/:orderId', auth, async (req, res)=>{
    label: try{
         const user = await User.findById(req.params.userId);
         const orders = await Order.find({ buyersID: req.params.userId, _id: req.params.orderId});
@@ -182,13 +228,18 @@ router.put('/:userId/orders/:orderId', async (req, res)=>{
             res.status(404).json({message: "There is no user with this ID"});
             break label;
         }        
-    
+        if (req.user.role === 'admin' || req.user.user_id === req.params.userId){
         if (orders === null || orders === [] || orders.length === 0){
             res.status(404).json({message: "There is no order with this ID"});
             break label;
         }
-    const updatedOrder = await Order.updateOne({ _id:req.params.orderId, buyersID:req.params.userId}, {$set: {buyersFirstName: req.body.buyersFirstName}});
-    res.status(200).json(updatedOrder);
+    const updatedOrder = await Order.updateOne({ _id:req.params.orderId, buyersID:req.params.userId}, {$set: {buyersFirstName: req.body.buyersFirstName,
+    buyersLastName: req.body.buyersLastName, buyersEmail: req.body.buyersEmail, deliveryAddress: req.body.deliveryAddress}});
+    res.status(200).json({Message: "Order updated"});
+        } else{
+            res.status(404).json({message: "User can only update his own order"});
+        break label;
+        }
     }catch(err){
         res.status(404).json({message: err});
     }
