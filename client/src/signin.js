@@ -7,7 +7,7 @@ export default function Registration() {
   /*const [fnameReg, setfnameReg] = useState("");
   const [lnameReg, setlnameReg] = useState("");
   const [emailReg, setemailReg] = useState("");
-  const [passwordReg, setPasswordReg] = useState("");*/
+  const [passwordReg, setPasswordReg] = useState("");*/ 
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
