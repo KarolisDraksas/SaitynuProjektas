@@ -36,7 +36,7 @@ router.post('/', auth, async (req, res)=>{
     const savedcategorie = await categorie.save();  
     res.status(201).json(savedcategorie)} 
     else{
-        res.status(404).json({message: "You need to be admin to add categories"})
+        res.status(403).json({message: "You need to be admin to add categories"})
     }
     } catch(err){
         res.status(404).json({ message: err });
@@ -70,7 +70,7 @@ router.delete('/:categoryId', auth, async (req, res) =>{
      const removedCategory = await Categorie.deleteOne({_id: req.params.categoryId });
      res.status(204).json({message: "Category deleted"});
     } else{
-        res.status(404).json({message: "You need to be admin to delete categories"})
+        res.status(403).json({message: "You need to be admin to delete categories"})
     }
     }catch(err){
         res.status(404).json({message: err});
@@ -84,7 +84,7 @@ router.put('/:categoryId', auth, async (req, res)=>{
     const updatedCategory = await Categorie.updateOne({ _id: req.params.categoryId}, {$set: {name: req.body.name}});
     res.status(200).json({message: "Category updated"});
         } else{
-            res.status(404).json({message: "You need to be admin to update categories"})
+            res.status(403).json({message: "You need to be admin to update categories"})
         }
     }catch(err){
         res.status(404).json({message: err});
@@ -115,7 +115,7 @@ router.get('/:categoryId/products', async (req, res) => {
     }
 });
 
-//-------------owner id to add
+//-------
 //add post
 router.post('/:categoryId/products', auth, async (req, res)=>{
     label: try{
@@ -175,7 +175,7 @@ router.delete('/:categoryId/products/:productId', auth, async (req, res) =>{
      const removedProduct = await Product.deleteOne({_id: req.params.productId });
      res.status(204).json(removedProduct);
         } else{
-            res.status(404).json({message: "Only product owner can delete his products"});
+            res.status(403).json({message: "Only product owner can delete his products"});
         }
     }catch(err){
         res.status(404).json({message: err});
@@ -201,7 +201,7 @@ router.put('/:categoryId/products/:productId', auth, async (req, res)=>{
         price: req.body.price}});
         res.status(200).json({Message: "Product updated"});
         } else{
-            res.status(404).json({message: "Only product owner can update his products"});
+            res.status(403).json({message: "Only product owner can update his products"});
         }
     }catch(err){
         res.status(404).json({message: err});

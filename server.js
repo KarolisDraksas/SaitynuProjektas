@@ -5,7 +5,7 @@ const cors = require('cors')
 require('dotenv/config')
 
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 5000;
 const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const passport = require('passport');
@@ -54,7 +54,7 @@ app.post("/register", async (req, res) => {
      );
      user.token = token;
  
-     res.status(201).json(user);
+     res.status(201).json({Message: "User registered", token: token});
    } catch (err) {
      console.log(err);
    }
@@ -85,7 +85,7 @@ app.post("/register", async (req, res) => {
  
        sessionUser.token = token 
        
-       res.status(200).json(sessionUser);
+       res.status(200).json({Message: "User logged in", token: token});
      } else{
      res.status(400).send("Invalid Credentials");}
    } catch (err) {
@@ -101,42 +101,31 @@ app.post("/register", async (req, res) => {
  });
 
 
- app.post("/registeradmin", auth, async (req, res) => {
+ app.post("/changerole/:userId", auth, async (req, res) => {
 
   try {
-    const { first_name, last_name, email, password } = req.body;
+    if (req.user.role === 'admin'){
+    const { role } = req.body;
 
-    if (!(email && password && first_name && last_name)) {
-      res.status(400).send("All input is required");
+    if (!(role)) {
+      res.status(400).send("Role is required");
     }
 
   
-    const oldUser = await User.findOne({ email });
+    const oldUser = await User.findOne({ _id: req.params.userId });
 
-    if (oldUser) {
-      return res.status(409).send("User Already Exist. Please Login");
+    if (!oldUser) {
+      return res.status(409).send("User with this ID doesn't exist");
     }
 
-    encryptedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
-      first_name,
-      last_name,
-      email: email.toLowerCase(), // sanitize: convert email to lowercase
-      password: encryptedPassword,
-      role:'admin'
-    });
+    const updatedRole = await User.updateOne({ _id:req.params.userId}, {$set: {role: req.body.role}})
 
-    const token = jwt.sign(
-      { user_id: user._id, email },
-      process.env.TOKEN_KEY,
-      {
-        expiresIn: "2h",
-      }
-    );
-    user.token = token;
-
-    res.status(201).json(user);
+    
+    res.status(201).json({message: "Role changed", info: updatedRole})
+    } else{
+      res.status(403).json({Message: "Only admin can change roles"});
+    }
   } catch (err) {
     console.log(err);
   }
@@ -155,7 +144,7 @@ app.use('/api/v1/users', usersRoute);
  
 app.get('/', (req, res)=>{
    //console.log(req.user);
-   res.send('We are on home'); 
+   res.send({express: 'We are on home'}); 
 });
 /*
 app.use(function(req, res, next){
@@ -178,7 +167,6 @@ app.use(function(req, res, next){
 });*/
 
 app.get('*', (req, res) =>{
- // res.sendFile(__dirname+'/public/error.html');
   res.sendStatus(404);
 })
 mongoose.connect( process.env.DB_CONNECTION , { useNewUrlParser: true} ,
